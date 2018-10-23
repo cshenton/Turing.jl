@@ -65,8 +65,9 @@ function runtests(; tests = ["all"])
                    "mh.jl",
                    # "pmmh.jl", "ipmcmc.jl", "pgibbs.jl", "smc.jl"
                   ]
+  MODEL_TESTS = ["rpm.jl"]
   TRACE_TESTS = ["trace.jl"]
-  ALL = union(CORE_TESTS, SAMPLER_TESTS, TRACE_TESTS)
+  ALL = union(CORE_TESTS, SAMPLER_TESTS, TRACE_TESTS, MODEL_TESTS)
 
   # test groups that should be executed
   TEST_GROUPS = "all" ∈ tests ? ALL : tests

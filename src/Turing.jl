@@ -27,7 +27,7 @@ using MacroTools
     import Stan: Adapt, Hmc
 end
 import Base: ~, convert, promote_rule, rand, getindex, setindex!
-import Distributions: sample
+import Distributions: sample, minimum, maximum, logpdf, rand
 import ForwardDiff: gradient
 using Flux.Tracker
 import MCMCChain: AbstractChains, Chains
