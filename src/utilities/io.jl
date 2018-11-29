@@ -7,8 +7,8 @@
 ##########
 
 mutable struct Sample
-  weight :: Float64     # particle weight
-  value :: Dict{Symbol,Any}
+    weight:: Float64 # particle weight
+    value::Dict{Symbol,Any}
 end
 
 Base.getindex(s::Sample, v::Symbol) = getjuliatype(s, v)
@@ -63,154 +63,198 @@ end
 #########
 
 """
-    Chain(weight::Float64, value::Array{Sample})
+    Turing specific MCMCChain.AbstractChains type.
 
-A wrapper of output trajactory of samplers.
 
 Example:
 
 ```julia
 # Define a model
-@model xxx begin
-  ...
-  return(mu,sigma)
+@model gmodel(x) = begin
+    mu ~ Normal(0, 1)
+    sigma ~ InverseGamma(2, 3)
+    for n in 1:length(x)
+        x[n] ~ Normal(mu, sqrt(sigma))
+    end
+    return (mu, sigma)
 end
 
 # Run the inference engine
-chain = sample(xxx, SMC(1000))
+chain = sample(test([0., 0.2, -0.2]), SMC(1000))
 
-chain[:logevidence]   # show the log model evidence
-chain[:mu]            # show the weighted trajactory for :mu
-chain[:sigma]         # show the weighted trajactory for :sigma
-mean(chain[:mu])      # find the mean of :mu
-mean(chain[:sigma])   # find the mean of :sigma
+# show the log model evidence
+chain[:logevidence]
+
+# show the weighted trajactory for `sigma`
+chain[:sigma]
+
+# find the mean of `mu`
+mean(chain[:mu])
 ```
 """
-mutable struct Chain{R<:AbstractRange{Int}} <: AbstractChains
-  weight  ::  Float64                 # log model evidence
-  value2  ::  Array{Sample}
-  value   ::  Array{Float64, 3}
-  range   ::  R # TODO: Perhaps change to UnitRange?
-  names   ::  Vector{String}
-  chains  ::  Vector{Int}
-  info    ::  Dict{Symbol,Any}
+struct Chain{T<:Real} <: AbstractChains
+    logevidence::Vector{Float64}
+    samples::Array{Sample}
+    value::Array{Union{Missing, Float64}, 3}
+    range::AbstractRange{Int}
+    names::Vector{String}
+    chains::Vector{Int}
+    info::Dict{Symbol, Any}
 end
 
-Chain() = Chain{AbstractRange{Int}}(0.0, Vector{Sample}(), Array{Float64, 3}(undef, 0, 0, 0), 0:0,
-                Vector{String}(), Vector{Int}(), Dict{Symbol,Any}())
 
-Chain(w::Real, s::Array{Sample}) = begin
-  chn = Chain()
-  chn.weight = w
-  chn.value2 = deepcopy(s)
+"""
+    Chain()
 
-  chn = flatten!(chn)
+Construct an empty chain object.
+"""
+function Chain()
+    c = Chain(
+            zeros(Float64),
+            Vector{Sample}(),
+            Array{Union{Missing, Float64}, 3}(undef, 0, 0, 0),
+            0:0,
+            Vector{String}(),
+            Vector{Int}(),
+            Dict{Symbol,Any}()
+    )
+    return c
 end
 
-flatten!(chn::Chain) = begin
-  ## Flatten samples into Mamba's chain type.
-  local names = Vector{Array{AbstractString}}()
-  local vals  = Vector{Array}()
-  for s in chn.value2
-    v, n = flatten(s)
-    push!(vals, v)
-    push!(names, n)
-  end
+"""
+    Chain(logevidence::Float64, value::Array{Sample})
 
-  # Assuming that names[i] == names[j] for all (i,j)
-  vals2 = [v[i] for v in vals, i=1:length(names[1])]
-  vals2 = reshape(vals2, length(vals), length(names[1]), 1)
-  c = Chains(vals2, names = names[1])
-  chn.value = c.value
-  chn.range = c.range
-  chn.names = c.names
-  chn.chains = c.chains
-  chn
+Construct a chain object holding given samples.
+"""
+function Chain(logevidence::Float64, s::Array{Sample})
+    return Chain([logevidence], s)
+end
+
+function Chain(logevidence::Vector{Float64}, s::Array{Sample})
+     chn = Chain()
+     chn.logevidence = logevidence
+     chn.samples = deepcopy(s)
+     flatten!(chn)
+
+     return chn
+end
+
+function flatten!(chn::Chain)
+    ## Flatten samples into Mamba's chain type.
+    Nsamples = length(chn.samples)
+    names_ = Vector{Array{AbstractString}}(undef, Nsamples)
+    vals_  = Vector{Array}(undef, Nsamples)
+
+    for (i, s) in enumerate(chn.samples)
+        v, n = flatten(s)
+        vals_[i] = v
+        names_[i] = n
+    end
+
+    # Assuming that names[i] == names[j] for all (i,j)
+    P = length(names[1])
+    v_ = Array{Union{Missing, Float64}, 3}(undef, Nsamples, P, 1)
+    for n in 1:Nsamples
+        for p in 1:P
+            v_[n, p, 1] = vals_[n][p]
+        end
+    end
+
+    chn.value = c.value
+    chn.range = range(1, step = 1, length = Nsamples)
+    chn.names = names_[1]
+    chn.chains = collect(1:1)
+
+    return chn
 end
 
 # ind2sub is deprecated in Julia 1.0
 ind2sub(v, i) = Tuple(CartesianIndices(v)[i])
 
-flatten(s::Sample) = begin
-  vals  = Vector{Float64}()
-  names = Vector{AbstractString}()
-  for (k, v) in s.value
-    flatten(names, vals, string(k), v)
-  end
-  return vals, names
+function flatten(s::Sample)
+    vals  = Vector{Float64}()
+    names = Vector{AbstractString}()
+    for (k, v) in s.value
+        flatten!(names, vals, string(k), v)
+    end
+    return vals, names
 end
-flatten(names, value :: Array{Float64}, k :: String, v) = begin
+
+function flatten!(names, value::Array{Float64}, k::String, v)
     if isa(v, Number)
-      name = k
-      push!(value, v)
-      push!(names, name)
+        name = k
+        push!(value, v)
+        push!(names, name)
     elseif isa(v, Array)
-      for i = eachindex(v)
-        if isa(v[i], Number)
-          name = k * string(ind2sub(size(v), i))
-          name = replace(name, "(" => "[");
-          name = replace(name, ",)" => "]");
-          name = replace(name, ")" => "]");
-          isa(v[i], Nothing) && println(v, i, v[i])
-          push!(value, Float64(v[i]))
-          push!(names, name)
-        elseif isa(v[i], Array)
-          name = k * string(ind2sub(size(v), i))
-          flatten(names, value, name, v[i])
-        else
-          error("Unknown var type: typeof($v[i])=$(typeof(v[i]))")
+        for i = eachindex(v)
+            if isa(v[i], Number)
+                name = k * string(ind2sub(size(v), i))
+                name = replace(name, "(" => "[");
+                name = replace(name, ",)" => "]");
+                name = replace(name, ")" => "]");
+                isa(v[i], Nothing) && println(v, i, v[i])
+                push!(value, Float64(v[i]))
+                push!(names, name)
+            elseif isa(v[i], Array)
+                name = k * string(ind2sub(size(v), i))
+                flatten(names, value, name, v[i])
+            else
+                error("Unknown var type: typeof($v[i])=$(typeof(v[i]))")
+            end
         end
-      end
-  else
-    error("Unknown var type: typeof($v)=$(typeof(v))")
-  end
+    else
+        error("Unknown var type: typeof($v)=$(typeof(v))")
+    end
 end
 
 function Base.getindex(c::Chain, v::Symbol)
-  # This strange implementation is mostly to keep backward compatability.
-  #  Needs some refactoring a better format for storing results is available.
-  if v == :logevidence
-    log(c.weight)
-  elseif v==:samples
-    c.value2
-  elseif v==:logweights
-    c[:lp]
-  else
-    map((s)->Base.getindex(s, v), c.value2)
-  end
+    # This strange implementation is mostly to keep backward compatability.
+    #  Needs some refactoring a better format for storing results is available.
+    if v == :logevidence
+        return c.:logevidence
+    elseif v==:samples
+        return c.samples
+    elseif v==:logweights
+        return c[:lp]
+    else
+        return map((s)->Base.getindex(s, v), c.samples)
+    end
 end
 
-Base.getindex(c::Chain, expr::Expr) = begin
-  str = replace(string(expr), r"\(|\)" => "")
-  @assert match(r"^\w+(\[(\d\,?)*\])+$", str) != nothing "[Turing.jl] $expr invalid for getindex(::Chain, ::Expr)"
-  c[Symbol(str)]
+function Base.getindex(c::Chain, expr::Expr)
+    str = replace(string(expr), r"\(|\)" => "")
+    @assert match(r"^\w+(\[(\d\,?)*\])+$", str) != nothing "[Turing.jl] $expr invalid for getindex(::Chain, ::Expr)"
+    return c[Symbol(str)]
 end
 
 function Base.vcat(c1::Chain, args::Chain...)
 
-  names = c1.names
-  all(c -> c.names == names, args) ||
-    throw(ArgumentError("chain names differ"))
+    all(c -> c.names == c1.names, args) || throw(ArgumentError("chain names differ"))
+    all(c -> c.chains == c1.chains, args) || throw(ArgumentError("sets of chains differ"))
 
-  chains = c1.chains
-  all(c -> c.chains == chains, args) ||
-    throw(ArgumentError("sets of chains differ"))
+    le_ = cat(1, c1.logevidence, map(c -> c.logevidence, args)...)
+    s_ = cat(1, c1.samples, map(c -> c.samples, args)...)
 
-  value2 = cat(1, c1.value2, map(c -> c.value2, args)...)
-  Chain(0, value2)
+    return Chain(le_, s_)
 end
 
-save!(c::Chain, spl::Sampler, model::Function, vi) = begin
-  c.info[:spl] = spl
-  c.info[:model] = model
-  c.info[:vi] = deepcopy(vi)
+"""
+    save!(c::Chain, spl::Sampler, model::Function, vi)
+
+Store sampler, model function and sampling state (vi) into a chain object.
+"""
+function save!(c::Chain, spl::Sampler, model::Function, vi)
+    c.info[:spl] = spl
+    c.info[:model] = model
+    c.info[:vi] = deepcopy(vi)
 end
 
-resume(c::Chain, n_iter::Int) = begin
-  @assert !isempty(c.info) "[Turing] cannot resume from a chain without state info"
-  sample(c.info[:model],
-         c.info[:spl].alg;    # this is actually not used
-         resume_from=c,
-         reuse_spl_n=n_iter
-        )
+"""
+    resume(c::Chain, n_iter::Int)
+
+Wrapper function to resume a MCMC sampling.
+"""
+function resume(c::Chain, n_iter::Int)
+    @assert !isempty(c.info) "[Turing] cannot resume from a chain without state info"
+    return sample(c.info[:model], c.info[:spl].alg; resume_from=c, reuse_spl_n=n_iter)
 end
