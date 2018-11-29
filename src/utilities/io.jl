@@ -232,9 +232,8 @@ function Base.vcat(c1::Chain, args::Chain...)
     all(c -> c.names == c1.names, args) || throw(ArgumentError("chain names differ"))
     all(c -> c.chains == c1.chains, args) || throw(ArgumentError("sets of chains differ"))
 
-    le_ = cat(1, c1.logevidence, map(c -> c.logevidence, args)...)
-    s_ = cat(1, c1.samples, map(c -> c.samples, args)...)
-
+    le_ = cat(1, c1.logevidence, map(c -> c.logevidence, args)..., dims=1)
+    s_ = cat(1, c1.samples, map(c -> c.samples, args)..., dims=1)
     return Chain(le_, s_)
 end
 

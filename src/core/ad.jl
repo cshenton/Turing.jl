@@ -110,11 +110,18 @@ import Base: <=
 <=(a::Tracker.TrackedReal, b::Tracker.TrackedReal) = a.data <= b.data
 
 function verifygrad(grad::AbstractVector{<:Real})
-    if any(isnan.(grad)) || any(isinf.(grad))
+    if any(isnan, grad) || any(isinf, grad)
         @warn("Numerical error has been found in gradients.")
         @warn("grad = $(grad)")
         return false
     else
         return true
     end
+end
+
+import StatsFuns: binomlogpdf
+binomlogpdf(n::Int, p::Tracker.TrackedReal, x::Int) = Tracker.track(binomlogpdf, n, p, x)
+Tracker.@grad function binomlogpdf(n::Int, p::Tracker.TrackedReal, x::Int)
+    return binomlogpdf(n, Tracker.data(p), x),
+        Δ->(nothing, Δ * (x / p - (n - x) / (1 - p)), nothing)
 end
