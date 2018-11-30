@@ -62,6 +62,8 @@ end
 # Chain #
 #########
 
+# TODO: Change type to immutable
+
 """
     Turing specific MCMCChain.AbstractChains type.
 
@@ -92,7 +94,7 @@ chain[:sigma]
 mean(chain[:mu])
 ```
 """
-struct Chain{T<:Real} <: AbstractChains
+mutable struct Chain <: AbstractChains
     logevidence::Vector{Float64}
     samples::Array{Sample}
     value::Array{Union{Missing, Float64}, 3}
@@ -110,7 +112,7 @@ Construct an empty chain object.
 """
 function Chain()
     c = Chain(
-            zeros(Float64),
+            Vector{Float64}(),
             Vector{Sample}(),
             Array{Union{Missing, Float64}, 3}(undef, 0, 0, 0),
             0:0,
@@ -152,7 +154,7 @@ function flatten!(chn::Chain)
     end
 
     # Assuming that names[i] == names[j] for all (i,j)
-    P = length(names[1])
+    P = length(names_[1])
     v_ = Array{Union{Missing, Float64}, 3}(undef, Nsamples, P, 1)
     for n in 1:Nsamples
         for p in 1:P
@@ -160,7 +162,7 @@ function flatten!(chn::Chain)
         end
     end
 
-    chn.value = c.value
+    chn.value = v_
     chn.range = range(1, step = 1, length = Nsamples)
     chn.names = names_[1]
     chn.chains = collect(1:1)

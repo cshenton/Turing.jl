@@ -122,7 +122,7 @@ sample(model::Function, alg::PG;
   @info("[PG] Finished with")
   @info("  Running time    = $time_total;")
 
-  loge = exp.(mean(spl.info[:logevidence]))
+  loge = exp(mean(spl.info[:logevidence]))
   if resume_from != nothing   # concat samples
     pushfirst!(samples, resume_from.value2...)
     pre_loge = resume_from.weight
