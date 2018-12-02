@@ -12,7 +12,7 @@ Computes the gradient of the log joint of `θ` for the model specified by
 function gradient(
     θ::AbstractVector{<:Real},
     vi::VarInfo,
-    model::Function,
+    model,
     sampler::Union{Nothing, Sampler}=nothing,
     backend::Symbol=ADBACKEND[],
 )
@@ -39,7 +39,7 @@ using forwards-mode AD from ForwardDiff.jl.
 function gradient_forward(
     θ::AbstractVector{<:Real},
     vi::VarInfo,
-    model::Function,
+    model,
     sampler::Union{Nothing, Sampler}=nothing,
     chunk_size::Int=CHUNKSIZE[],
 )
@@ -81,7 +81,7 @@ Computes the gradient of the log joint of `θ` for the model specified by
 function gradient_reverse(
     θ::AbstractVector{<:Real},
     vi::Turing.VarInfo,
-    model::Function,
+    model,
     sampler::Union{Nothing, Sampler}=nothing,
 )
     vals_old, logp_old = copy(vi.vals), copy(vi.logp)
