@@ -52,5 +52,5 @@ function sample(model::Function, alg::DynamicNUTS, chunk_size=CHUNKSIZE[]) where
         setchunksize(default_chunk_size)      # revert global chunk size
     end
 
-    return Chain(0.0, samples)
+    return Chain(log(0.0), samples)
 end

@@ -213,7 +213,7 @@ function Base.getindex(c::Chain, v::Symbol)
     # This strange implementation is mostly to keep backward compatability.
     #  Needs some refactoring a better format for storing results is available.
     if v == :logevidence
-        return c.:logevidence
+        return c.logevidence
     elseif v==:samples
         return c.samples
     elseif v==:logweights

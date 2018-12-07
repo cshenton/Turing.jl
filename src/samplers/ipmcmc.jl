@@ -136,5 +136,5 @@ sample(model::Function, alg::IPMCMC) = begin
   println("[IPMCMC] Finished with")
   println("  Running time    = $time_total;")
 
-  Chain(0.0, samples) # wrap the result by Chain
+  return Chain(log(0.0), samples) # wrap the result by Chain
 end
