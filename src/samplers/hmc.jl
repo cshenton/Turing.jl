@@ -66,7 +66,7 @@ function HMC(alg::HMC, new_gid::Int)
 end
 HMC{T}(alg::HMC, new_gid::Int) where {T} = HMC(alg, new_gid)
 
-function hmc_step(θ, lj, lj_func, grad_func, H_func, ϵ, alg::HMC, momentum_sampler;
+function hmc_step(θ, lj, lj_func, grad_func, H_func, ϵ, alg::HMC, momentum_sampler::Function;
                   rev_func=nothing, log_func=nothing)
   θ_new, lj_new, is_accept, τ_valid, α = _hmc_step(
             θ, lj, lj_func, grad_func, H_func, alg.tau, ϵ, momentum_sampler; rev_func=rev_func, log_func=log_func)
