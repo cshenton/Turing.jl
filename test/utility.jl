@@ -62,7 +62,7 @@ function runtests(; tests = ["all"])
                 "util.jl"]
   SAMPLER_TESTS = ["resample.jl", "adapt.jl", "vectorisation.jl", "gibbs.jl", "nuts.jl",
                    "hmcda.jl", "hmc_core.jl", "hmc.jl", "sghmc.jl", "sgld.jl", "is.jl",
-                   "mh.jl",
+                   "mh.jl", "models.jl",
                    # "pmmh.jl", "ipmcmc.jl", "pgibbs.jl", "smc.jl"
                   ]
   TRACE_TESTS = ["trace.jl"]
