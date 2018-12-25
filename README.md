@@ -7,8 +7,6 @@
 [![Turing](http://pkg.julialang.org/badges/Turing_0.6.svg)](http://pkg.julialang.org/detail/Turing)
 [![Documentation](https://img.shields.io/badge/doc-latest-blue.svg)](http://turing.ml/docs/)
 
-News: **Turing.jl is now Julia 1.0 compatible now! Be aware that some things still might fail.**
-
 **Turing.jl** is a Julia library for (_universal_) [probabilistic programming](https://en.wikipedia.org/wiki/Probabilistic_programming_language). Current features include:
 
 - Universal probabilistic programming with an intuitive modelling interface
@@ -74,4 +72,4 @@ Turing is an open source project so if you feel you have some relevant skills an
 Join [our channel](https://julialang.slack.com/messages/turing/) (`#turing`) in the Julia Slack chat for help, discussion, or general communication with the Turing team. If you do not already have an invitation to Julia's Slack, you can get one by going [here](https://slackinvite.julialang.org/).
 
 ## Citing Turing.jl ##
-If you use **Turing** for your own research, please consider citing the following publication: Hong Ge, Kai Xu, and Zoubin Ghahramani: **Turing: Composable inference for probabilistic programming.** AISTATS 2018 [pdf](http://proceedings.mlr.press/v84/ge18b.html) [bibtex](https://dblp.org/rec/bib2/conf/aistats/GeXG18.bib)
+If you use **Turing** for your own research, please consider citing the following publication: Hong Ge, Kai Xu, and Zoubin Ghahramani: **Turing: a language for flexible probabilistic inference.** AISTATS 2018 [pdf](http://proceedings.mlr.press/v84/ge18b.html) [bibtex](https://dblp.org/rec/bib2/conf/aistats/GeXG18.bib)
